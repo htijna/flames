@@ -98,9 +98,8 @@ const Button = styled.button`
   }
 `;
 
-
 const ShareButton = styled.button`
-  background:rgb(157, 17, 127);
+  background: rgb(157, 17, 127);
   color: white;
   padding: 10px;
   font-size: 16px;
@@ -113,7 +112,7 @@ const ShareButton = styled.button`
   max-width: 350px;
 
   &:hover {
-    background:rgb(150, 37, 181);
+    background: rgb(150, 37, 181);
   }
 
   @media (max-width: 768px) {
@@ -122,14 +121,13 @@ const ShareButton = styled.button`
   }
 `;
 
-
 const Result = styled.h2`
   color: #d43f5e;
   font-size: 24px;
   margin-top: 20px;
   opacity: 0;
   animation: fadeIn 0.5s ease-in-out forwards;
-  
+
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -140,35 +138,27 @@ const Result = styled.h2`
   }
 `;
 
-// Updated flamesLogic function
+// FLAMES logic function
 const flamesLogic = (name1, name2) => {
-  // Clean and prepare names by removing spaces and converting to lowercase
   const cleanName1 = name1.toLowerCase().replace(/\s/g, "");
   const cleanName2 = name2.toLowerCase().replace(/\s/g, "");
 
-  // Split names into arrays for manipulation
   let name1Arr = cleanName1.split("");
   let name2Arr = cleanName2.split("");
 
-  // Remove common letters from both arrays
   for (let i = 0; i < name1Arr.length; i++) {
     const indexInName2 = name2Arr.indexOf(name1Arr[i]);
     if (indexInName2 !== -1) {
-      // Mark the letter as removed by setting it to an empty string
       name1Arr[i] = "";
       name2Arr[indexInName2] = "";
     }
   }
 
-  // Count remaining letters in both arrays
   const remainingCount =
     name1Arr.filter(letter => letter !== "").length +
     name2Arr.filter(letter => letter !== "").length;
 
-  // FLAMES list representing relationship outcomes
   let flames = ["Friend", "Love", "Affection", "Marriage", "Enemy", "Sibling"];
-
-  // Elimination process: Remove one outcome each round until one remains.
   let index = 0;
   while (flames.length > 1) {
     index = (index + remainingCount - 1) % flames.length;
@@ -182,6 +172,7 @@ const FlamesGame = () => {
   const [name1, setName1] = useState("");
   const [name2, setName2] = useState("");
   const [result, setResult] = useState(null);
+  const [animate, setAnimate] = useState(false);
 
   // Generate randomized heart positions once to prevent re-renders
   const heartPositions = useMemo(
@@ -201,19 +192,46 @@ const FlamesGame = () => {
     setName2(e.target.value);
   }, []);
 
-  const [animate, setAnimate] = useState(false);
+  // Sound feature: plays a sound effect when the result appears.
+  const playSound = () => {
+    const audio = new Audio("/sound.mp3"); // Ensure sound.mp3 is in your public folder
+    audio.play();
+  };
+
+  // Google Form submission function
+  const googleFormSubmit = (name1, name2, result) => {
+    // Change the URL from viewform to formResponse for data submission
+    const formUrl =
+      "https://docs.google.com/forms/d/e/1FAIpQLSdnBCE7oXLrTms1bXOFtJ8S3IBmS4rrybfgPVt4lFuQ3EPjGA/formResponse";
+
+    const formData = new URLSearchParams();
+    // Replace these entry IDs with your actual Google Form entry IDs.
+    formData.append("entry.1258797272", name1);  // Your Name
+    formData.append("entry.2147105367", name2);  // Crush's Name
+    formData.append("entry.499995689", result);   // Result
+
+    fetch(formUrl, {
+      method: "POST",
+      mode: "no-cors", // Google Forms does not return CORS headers
+      body: formData,
+    }).catch(err => console.error("Error submitting to Google Form:", err));
+  };
 
   const handleSubmit = () => {
     if (name1.trim() && name2.trim()) {
-      setResult(null); // Reset first to trigger reflow
+      setResult(null); // Reset result to trigger reflow/animation
       setTimeout(() => {
-        setResult(flamesLogic(name1, name2));
+        const flamesResult = flamesLogic(name1, name2);
+        setResult(flamesResult);
         setAnimate(true);
+        playSound(); // Play sound after calculating the result
+        // Submit the data to Google Form after calculating the result
+        googleFormSubmit(name1, name2, flamesResult);
         setTimeout(() => setAnimate(false), 500); // Reset animation after it plays
       }, 50);
     }
   };
-  
+
   const handleShare = async () => {
     if (!result) return;
 
@@ -228,7 +246,6 @@ const FlamesGame = () => {
       alert("Copied to clipboard! Share it with your friends. 📋");
     }
   };
-
 
   return (
     <Background>
@@ -252,9 +269,14 @@ const FlamesGame = () => {
           onChange={handleChange2}
         />
         <Button onClick={handleSubmit}>Check Relationship</Button>
-        {result && <Result className={animate ? "fade-in" : ""}>💘 {result} 💘</Result>}
-         <ShareButton onClick={handleShare}>📤 Share Result</ShareButton>
-
+        {result && (
+          <Result className={animate ? "fade-in" : ""}>
+            💘 {result} 💘
+          </Result>
+        )}
+        <ShareButton onClick={handleShare}>
+          📤 Share Result
+        </ShareButton>
       </Container>
     </Background>
   );
