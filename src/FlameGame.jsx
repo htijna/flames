@@ -176,11 +176,19 @@ const FlamesGame = () => {
     setName2(e.target.value);
   }, []);
 
+  const [animate, setAnimate] = useState(false);
+
   const handleSubmit = () => {
     if (name1.trim() && name2.trim()) {
-      setResult(flamesLogic(name1, name2));
+      setResult(null); // Reset first to trigger reflow
+      setTimeout(() => {
+        setResult(flamesLogic(name1, name2));
+        setAnimate(true);
+        setTimeout(() => setAnimate(false), 500); // Reset animation after it plays
+      }, 50);
     }
   };
+  
 
   return (
     <Background>
@@ -204,7 +212,8 @@ const FlamesGame = () => {
           onChange={handleChange2}
         />
         <Button onClick={handleSubmit}>Check Relationship</Button>
-        {result && <Result>💘 {result} 💘</Result>}
+        {result && <Result className={animate ? "fade-in" : ""}>💘 {result} 💘</Result>}
+
       </Container>
     </Background>
   );
