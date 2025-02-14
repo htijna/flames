@@ -211,7 +211,7 @@ const FlamesGame = () => {
   const handleShare = async () => {
     if (!result) return;
 
-    const shareMessage = `🔥 FLAMES Result 🔥\n${name1} ❤️ ${name2} = ${result} 💘\nTry it now!`;
+    const shareMessage = `🔥 FLAMES Result 🔥\n${name1} ❤️ ${name2} = ${result} 💘\nTry it now! https://flames-matcher.vercel.app/`;
 
     if (navigator.share) {
       await navigator.share({ text: shareMessage });
