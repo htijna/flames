@@ -1,5 +1,5 @@
 
-import './App.css';
+
 import FlamesGame from './FlameGame';
 
 function App() {

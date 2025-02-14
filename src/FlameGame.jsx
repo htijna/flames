@@ -38,7 +38,7 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px; /* Ensures equal spacing between elements */
+  gap: 12px;
 
   @media (max-width: 768px) {
     padding: 20px;
@@ -63,38 +63,42 @@ const Input = styled.input`
   border-radius: 8px;
   font-size: 16px;
   outline: none;
-  transition: border 0.3s;
-  text-align: center; /* Centers text for a balanced look */
+  text-align: center;
 
   &:focus {
     border-color: #d43f5e;
   }
-
-  @media (max-width: 768px) {
-    font-size: 14px;
-  }
 `;
 
 const Button = styled.button`
-  background: #ff4d6d;
+  background: ${({ disabled }) => (disabled ? "#d3d3d3" : "#ff4d6d")};
   color: white;
   padding: 12px;
   font-size: 18px;
   border: none;
-  cursor: pointer;
+  cursor: ${({ disabled }) => (disabled ? "not-allowed" : "pointer")};
   border-radius: 8px;
   margin-top: 10px;
-  transition: background 0.3s;
   width: 100%;
   max-width: 350px;
 
   &:hover {
-    background: #d43f5e;
+    background: ${({ disabled }) => (disabled ? "#d3d3d3" : "#d43f5e")};
   }
+`;
 
-  @media (max-width: 768px) {
-    font-size: 16px;
-    padding: 10px;
+
+
+const Result = styled.h2`
+  color: #d43f5e;
+  font-size: 24px;
+  margin-top: 20px;
+  opacity: 0;
+  animation: fadeIn 0.5s ease-in-out forwards;
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 `;
 
@@ -121,22 +125,6 @@ const ShareButton = styled.button`
   }
 `;
 
-const Result = styled.h2`
-  color: #d43f5e;
-  font-size: 24px;
-  margin-top: 20px;
-  opacity: 0;
-  animation: fadeIn 0.5s ease-in-out forwards;
-
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  @media (max-width: 768px) {
-    font-size: 20px;
-  }
-`;
 
 // FLAMES logic function
 const flamesLogic = (name1, name2) => {
@@ -172,9 +160,8 @@ const FlamesGame = () => {
   const [name1, setName1] = useState("");
   const [name2, setName2] = useState("");
   const [result, setResult] = useState(null);
-  const [animate, setAnimate] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Generate randomized heart positions once to prevent re-renders
   const heartPositions = useMemo(
     () =>
       Array.from({ length: 30 }, () => ({
@@ -184,69 +171,55 @@ const FlamesGame = () => {
     []
   );
 
-  const handleChange1 = useCallback(e => {
-    setName1(e.target.value);
-  }, []);
+  const handleChange1 = useCallback(e => setName1(e.target.value), []);
+  const handleChange2 = useCallback(e => setName2(e.target.value), []);
 
-  const handleChange2 = useCallback(e => {
-    setName2(e.target.value);
-  }, []);
-
-  // Sound feature: plays a sound effect when the result appears.
   const playSound = () => {
-    const audio = new Audio("/sound.mp3"); // Ensure sound.mp3 is in your public folder
-    audio.play();
+    const audio = new Audio("/sound.mp3");
+    audio.play().catch(error => console.error("Audio play failed:", error));
   };
 
-  // Google Form submission function
   const googleFormSubmit = (name1, name2, result) => {
-    // Change the URL from viewform to formResponse for data submission
     const formUrl =
-      "https://docs.google.com/forms/d/e/1FAIpQLSdnBCE7oXLrTms1bXOFtJ8S3IBmS4rrybfgPVt4lFuQ3EPjGA/formResponse";
-
+    "https://docs.google.com/forms/d/e/1FAIpQLSckzZpp7loEfc3tXQdbR7Qtavkmd919ERX9v3SYlIl9YFp6Lw/formResponse";
+   
     const formData = new URLSearchParams();
-    // Replace these entry IDs with your actual Google Form entry IDs.
-    formData.append("entry.1258797272", name1);  // Your Name
-    formData.append("entry.2147105367", name2);  // Crush's Name
-    formData.append("entry.499995689", result);   // Result
+    formData.append("entry.952635422", name1);  // Your Name (Name)
+    formData.append("entry.1791477733", name2);  // Crush's Name (Cname)
+    formData.append("entry.1988919414", result);   // Result (Result)
 
-    fetch(formUrl, {
-      method: "POST",
-      mode: "no-cors", // Google Forms does not return CORS headers
-      body: formData,
-    }).catch(err => console.error("Error submitting to Google Form:", err));
+    fetch(formUrl, { method: "POST", mode: "no-cors", body: formData })
+      .then(() => console.log("Submitted successfully"))
+      .catch(err => console.error("Google Form submission error:", err));
   };
 
   const handleSubmit = () => {
-    if (name1.trim() && name2.trim()) {
-      setResult(null); // Reset result to trigger reflow/animation
-      setTimeout(() => {
-        const flamesResult = flamesLogic(name1, name2);
-        setResult(flamesResult);
-        setAnimate(true);
-        playSound(); // Play sound after calculating the result
-        // Submit the data to Google Form after calculating the result
-        googleFormSubmit(name1, name2, flamesResult);
-        setTimeout(() => setAnimate(false), 500); // Reset animation after it plays
-      }, 50);
-    }
-  };
+    if (!name1.trim() || !name2.trim()) return alert("Enter both names!");
+    if (name1.toLowerCase() === name2.toLowerCase()) return alert("Names should be different!");
 
+    setIsLoading(true);
+    setResult(null);
+
+    setTimeout(() => {
+      const flamesResult = flamesLogic(name1, name2);
+      setResult(flamesResult);
+      playSound();
+      googleFormSubmit(name1, name2, flamesResult);
+      setIsLoading(false);
+    }, 2000);
+  };
   const handleShare = async () => {
     if (!result) return;
 
     const shareMessage = `🔥 FLAMES Result 🔥\n${name1} ❤️ ${name2} = ${result} 💘\nTry it now!`;
 
     if (navigator.share) {
-      // Use Web Share API for mobile
       await navigator.share({ text: shareMessage });
     } else {
-      // Fallback: Copy to clipboard
       await navigator.clipboard.writeText(shareMessage);
       alert("Copied to clipboard! Share it with your friends. 📋");
     }
   };
-
   return (
     <Background>
       {heartPositions.map((pos, i) => (
@@ -256,25 +229,13 @@ const FlamesGame = () => {
       ))}
       <Container>
         <Title>FLAMES - Love Calculator 💖</Title>
-        <Input
-          type="text"
-          placeholder="Your Name"
-          value={name1}
-          onChange={handleChange1}
-        />
-        <Input
-          type="text"
-          placeholder="Crush's Name"
-          value={name2}
-          onChange={handleChange2}
-        />
-        <Button onClick={handleSubmit}>Check Relationship</Button>
-        {result && (
-          <Result className={animate ? "fade-in" : ""}>
-            💘 {result} 💘
-          </Result>
-        )}
-        <ShareButton onClick={handleShare}>
+        <Input type="text" placeholder="Your Name" value={name1} onChange={handleChange1} />
+        <Input type="text" placeholder="Crush's Name" value={name2} onChange={handleChange2} />
+        <Button onClick={handleSubmit} disabled={isLoading}>
+          {isLoading ? "Checking..." : "Check Relationship"}
+        </Button>
+        {result && <Result>💘 {result} 💘</Result>}
+        <ShareButton href="https://" onClick={handleShare}>
           📤 Share 
         </ShareButton>
       </Container>
