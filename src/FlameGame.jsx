@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import styled, { keyframes } from "styled-components";
 
 // Heart Animation
@@ -7,25 +7,26 @@ const floatingHearts = keyframes`
   100% { transform: translateY(-100vh); opacity: 0; }
 `;
 
+const fadeIn = keyframes`
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+`;
+
+const confettiAnimation = keyframes`
+  0% { transform: translateY(0) rotate(0); opacity: 1; }
+  100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+`;
+
 const Background = styled.div`
   position: fixed;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #ff758c, #ff7eb3);
+  background: #ff758c;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   padding: 20px;
-`;
-
-const Heart = styled.div`
-  position: absolute;
-  color: #ff4d6d;
-  font-size: 20px;
-  top: 100%;
-  left: ${({ left }) => left}%;
-  animation: ${floatingHearts} ${({ duration }) => duration}s linear infinite;
 `;
 
 const Container = styled.div`
@@ -39,18 +40,14 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px; /* Ensures equal spacing between elements */
-
-  @media (max-width: 768px) {
-    padding: 20px;
-  }
+  gap: 12px;
+  animation: ${fadeIn} 0.5s ease-in-out;
 `;
 
 const Title = styled.h1`
   color: #ff4d6d;
   font-family: "Cursive", sans-serif;
   font-size: 2rem;
-
   @media (max-width: 768px) {
     font-size: 1.5rem;
   }
@@ -64,15 +61,11 @@ const Input = styled.input`
   border-radius: 8px;
   font-size: 16px;
   outline: none;
-  transition: border 0.3s;
-  text-align: center; /* Centers text for a balanced look */
-
+  text-align: center;
+  background: #fff;
+  color: #000;
   &:focus {
     border-color: #d43f5e;
-  }
-
-  @media (max-width: 768px) {
-    font-size: 14px;
   }
 `;
 
@@ -88,14 +81,16 @@ const Button = styled.button`
   transition: background 0.3s;
   width: 100%;
   max-width: 350px;
-
   &:hover {
     background: #d43f5e;
   }
+`;
 
-  @media (max-width: 768px) {
-    font-size: 16px;
-    padding: 10px;
+const ResetButton = styled(Button)`
+  background: #ccc;
+  color: #000;
+  &:hover {
+    background: #999;
   }
 `;
 
@@ -104,16 +99,22 @@ const Result = styled.h2`
   font-size: 24px;
   margin-top: 20px;
   opacity: 0;
-  animation: fadeIn 0.5s ease-in-out forwards;
-  
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
+  animation: ${fadeIn} 0.5s ease-in-out forwards;
   @media (max-width: 768px) {
     font-size: 20px;
   }
+`;
+
+const HistoryContainer = styled.div`
+  margin-top: 20px;
+  background: #fff;
+  padding: 10px;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 350px;
+  text-align: left;
+  font-size: 14px;
+  color: #333;
 `;
 
 const flamesLogic = (name1, name2) => {
@@ -130,7 +131,6 @@ const flamesLogic = (name1, name2) => {
       flames.pop();
     }
   }
-
   return flames[0];
 };
 
@@ -138,50 +138,52 @@ const FlamesGame = () => {
   const [name1, setName1] = useState("");
   const [name2, setName2] = useState("");
   const [result, setResult] = useState(null);
+  const [history, setHistory] = useState([]);
+  const resultSound = new Audio("/result-sound.mp3");
 
-  // Generate randomized heart positions once to prevent re-renders
-  const heartPositions = useMemo(() =>
-    Array.from({ length: 30 }, () => ({
-      left: Math.random() * 100,
-      duration: 4 + Math.random() * 3,
-    })), []
-  );
-
-  const handleChange1 = useCallback((e) => {
-    setName1(e.target.value);
-  }, []);
-
-  const handleChange2 = useCallback((e) => {
-    setName2(e.target.value);
+  useEffect(() => {
+    const savedHistory = JSON.parse(localStorage.getItem("flamesHistory")) || [];
+    setHistory(savedHistory);
   }, []);
 
   const handleSubmit = () => {
     if (name1.trim() && name2.trim()) {
-      setResult(flamesLogic(name1, name2));
+      const flamesResult = flamesLogic(name1, name2);
+      setResult(flamesResult);
+      resultSound.play();
+      const newHistory = [{ name1, name2, result: flamesResult }, ...history];
+      setHistory(newHistory);
+      localStorage.setItem("flamesHistory", JSON.stringify(newHistory));
     }
+  };
+
+  const handleReset = () => {
+    setName1("");
+    setName2("");
+    setResult(null);
+    setHistory([]);
+    localStorage.removeItem("flamesHistory");
   };
 
   return (
     <Background>
-      {heartPositions.map((pos, i) => (
-        <Heart key={i} left={pos.left} duration={pos.duration}>❤️</Heart>
-      ))}
       <Container>
         <Title>FLAMES - Love Calculator 💖</Title>
-        <Input
-          type="text"
-          placeholder="Your Name"
-          value={name1}
-          onChange={handleChange1}
-        />
-        <Input
-          type="text"
-          placeholder="Crush's Name"
-          value={name2}
-          onChange={handleChange2}
-        />
+        <Input type="text" placeholder="Your Name" value={name1} onChange={(e) => setName1(e.target.value)} />
+        <Input type="text" placeholder="Crush's Name" value={name2} onChange={(e) => setName2(e.target.value)} />
         <Button onClick={handleSubmit}>Check Relationship</Button>
         {result && <Result>💘 {result} 💘</Result>}
+        <ResetButton onClick={handleReset}>Reset</ResetButton>
+        {history.length > 0 && (
+          <HistoryContainer>
+            <h3>History:</h3>
+            <ul>
+              {history.map((entry, index) => (
+                <li key={index}>{entry.name1} & {entry.name2} ➡ {entry.result}</li>
+              ))}
+            </ul>
+          </HistoryContainer>
+        )}
       </Container>
     </Background>
   );
