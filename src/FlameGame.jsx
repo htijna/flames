@@ -100,7 +100,7 @@ const Button = styled.button`
 
 
 const ShareButton = styled.button`
-  background:rgb(49, 16, 94);
+  background:rgb(157, 17, 127);
   color: white;
   padding: 10px;
   font-size: 16px;
