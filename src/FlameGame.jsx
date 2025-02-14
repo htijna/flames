@@ -275,7 +275,7 @@ const FlamesGame = () => {
           </Result>
         )}
         <ShareButton onClick={handleShare}>
-          📤 Share Result
+          📤 Share 
         </ShareButton>
       </Container>
     </Background>
