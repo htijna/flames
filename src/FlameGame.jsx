@@ -98,6 +98,31 @@ const Button = styled.button`
   }
 `;
 
+
+const ShareButton = styled.button`
+  background:rgb(49, 16, 94);
+  color: white;
+  padding: 10px;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+  margin-top: 10px;
+  transition: background 0.3s;
+  width: 100%;
+  max-width: 350px;
+
+  &:hover {
+    background:rgb(150, 37, 181);
+  }
+
+  @media (max-width: 768px) {
+    font-size: 14px;
+    padding: 8px;
+  }
+`;
+
+
 const Result = styled.h2`
   color: #d43f5e;
   font-size: 24px;
@@ -189,6 +214,21 @@ const FlamesGame = () => {
     }
   };
   
+  const handleShare = async () => {
+    if (!result) return;
+
+    const shareMessage = `🔥 FLAMES Result 🔥\n${name1} ❤️ ${name2} = ${result} 💘\nTry it now!`;
+
+    if (navigator.share) {
+      // Use Web Share API for mobile
+      await navigator.share({ text: shareMessage });
+    } else {
+      // Fallback: Copy to clipboard
+      await navigator.clipboard.writeText(shareMessage);
+      alert("Copied to clipboard! Share it with your friends. 📋");
+    }
+  };
+
 
   return (
     <Background>
@@ -213,6 +253,7 @@ const FlamesGame = () => {
         />
         <Button onClick={handleSubmit}>Check Relationship</Button>
         {result && <Result className={animate ? "fade-in" : ""}>💘 {result} 💘</Result>}
+         <ShareButton onClick={handleShare}>📤 Share Result</ShareButton>
 
       </Container>
     </Background>
