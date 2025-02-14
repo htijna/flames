@@ -235,7 +235,7 @@ const FlamesGame = () => {
           {isLoading ? "Checking..." : "Check Relationship"}
         </Button>
         {result && <Result>💘 {result} 💘</Result>}
-        <ShareButton href="https://" onClick={handleShare}>
+        <ShareButton href="https://flames-matcher.vercel.app/" onClick={handleShare}>
           📤 Share 
         </ShareButton>
       </Container>
